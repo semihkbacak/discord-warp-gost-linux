@@ -1,0 +1,25 @@
+name: Package and test
+on:
+  push:
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bash syntax
+        run: bash -n install.sh uninstall.sh doctor.sh bin/* tests/test.sh gui/privileged-install packaging/build-deb.sh
+      - name: Python syntax
+        run: python3 -m compileall -q gui/
+      - name: Mocked behavior tests (no WARP traffic)
+        run: bash tests/test.sh
+      - name: Build native Debian installer
+        run: ./packaging/build-deb.sh dist/
+      - name: Verify package manifest
+        run: |
+          dpkg-deb --info dist/*.deb
+          dpkg-deb --contents dist/*.deb | grep -F '/usr/bin/discord-warp-setup'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: discord-warp-gost-installer-deb
+          path: dist/*.deb

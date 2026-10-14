@@ -1,0 +1,15 @@
+# Managed by discord-warp-gost-linux
+[Unit]
+Description=Discord-only GOST HTTP-to-WARP local proxy
+Documentation=https://v3.gost.run/en/concepts/resolver/
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/discord-warp-gost-run
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=yes
+
+# Deliberately not enabled at login: discord-warp starts this on demand.
+[Install]
+WantedBy=default.target

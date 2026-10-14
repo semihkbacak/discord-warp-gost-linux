@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Managed by discord-warp-gost-linux
+set -euo pipefail
+
+if [[ -x "$HOME/.local/bin/gost" ]]; then
+    gost_bin="$HOME/.local/bin/gost"
+elif command -v gost >/dev/null 2>&1; then
+    gost_bin="$(command -v gost)"
+else
+    echo 'GOST bulunamadı. https://github.com/go-gost/gost/releases' >&2
+    exit 1
+fi
+
+# The HTTP proxy is bound to loopback. Requests are resolved by GOST's own
+# DoH resolver before being passed to the WARP SOCKS5 local proxy.
+exec "$gost_bin" \
+    -L 'http://127.0.0.1:40001?resolver=https://1.0.0.1/dns-query' \
+    -F 'socks5://127.0.0.1:40000'

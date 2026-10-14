@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+# Managed by discord-warp-gost-linux
+set -euo pipefail
+
+warn() {
+    printf 'discord-warp: %s\n' "$*" >&2
+    if command -v notify-send >/dev/null 2>&1; then
+        notify-send 'Discord (WARP)' "$*" >/dev/null 2>&1 || true
+    fi
+}
+
+for executable in warp-cli curl flatpak systemctl; do
+    if ! command -v "$executable" >/dev/null 2>&1; then
+        warn "Gerekli komut bulunamadı: $executable"
+        exit 1
+    fi
+done
+
+# Fail closed if someone switched WARP to whole-device VPN/DNS modes.
+if ! warp-cli settings 2>/dev/null | grep -Fq 'Mode: WarpProxy on port 40000'; then
+    warn 'WARP, 40000 portunda WarpProxy modunda değil; bağlantı başlatılmadı.'
+    exit 1
+fi
+
+warp_connected() {
+    warp-cli status 2>/dev/null | grep -Fq 'Status update: Connected'
+}
+
+if ! warp_connected; then
+    if ! warp-cli connect >/dev/null; then
+        warn 'WARP proxy bağlantısı başlatılamadı.'
+        exit 1
+    fi
+fi
+
+connected=false
+for (( i=0; i<30; i++ )); do
+    if warp_connected; then
+        connected=true
+        break
+    fi
+    sleep 1
+done
+if [[ "$connected" != true ]]; then
+    warn 'WARP 30 saniye içinde bağlanmadı.'
+    exit 1
+fi
+
+# Reuse an existing working local proxy (such as a previously configured
+# Discord-only GOST instance). Never disrupt or replace it.
+if ! curl --silent --fail --head --max-time 4 \
+    --proxy 'http://127.0.0.1:40001' \
+    'https://discordapp.com/app' >/dev/null 2>&1; then
+    if ! systemctl --user start discord-warp-gost-linux.service; then
+        warn 'GOST kullanıcı servisi başlatılamadı: systemctl --user status discord-warp-gost-linux.service'
+        exit 1
+    fi
+fi
+
+# Test the *actual proxy path* (not only whether port 40001 is listening).
+ready=false
+for (( i=0; i<20; i++ )); do
+    if curl --silent --show-error --fail --head --max-time 5 \
+        --proxy 'http://127.0.0.1:40001' \
+        'https://discordapp.com/app' >/dev/null 2>&1; then
+        ready=true
+        break
+    fi
+    sleep 1
+done
+if [[ "$ready" != true ]]; then
+    warn 'Discord proxy testi başarısız. journalctl --user -u discord-warp-gost-linux.service -n 50'
+    exit 1
+fi
+
+exec flatpak run com.discordapp.Discord \
+    --proxy-server=http://127.0.0.1:40001 "$@"

@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# This helper only adds Cloudflare's package repository and installs cloudflare-warp.
+# Never edits NetworkManager, /etc/resolv.conf, systemd-resolved or nftables.
+set -euo pipefail
+[[ "${1:-}" == warp ]] || { echo 'Unsupported action' >&2; exit 2; }
+[[ "$(id -u)" -eq 0 ]] || { echo 'Root authorization required' >&2; exit 2; }
+. /etc/os-release
+if [[ "$ID" != ubuntu || ! "$VERSION_CODENAME" =~ ^(jammy|noble|resolute)$ ]]; then
+    echo 'Automatic WARP package installation supports Ubuntu 22.04/24.04/26.04.' >&2
+    exit 3
+fi
+apt-get update -qq
+apt-get install -y ca-certificates curl gnupg
+key_tmp="$(mktemp)"
+trap 'rm -f "$key_tmp"' EXIT
+curl -fsSL --retry 2 https://pkg.cloudflareclient.com/pubkey.gpg -o "$key_tmp"
+gpg --batch --yes --dearmor -o /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg "$key_tmp"
+printf 'deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ %s main\n' "$VERSION_CODENAME" \
+ > /etc/apt/sources.list.d/cloudflare-client.list
+apt-get update -qq
+apt-get install -y cloudflare-warp

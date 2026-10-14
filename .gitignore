@@ -1,0 +1,21 @@
+# Never commit local Cloudflare registration, keys or app profiles
+*.key
+*.pem
+*.p12
+*.pfx
+.env
+.env.*
+config.json
+*.log
+warp-debugging-info.zip
+# Temporary files
+*~
+*.swp
+__pycache__/
+.cache/
+*.tar.gz
+
+# Build artifacts
+dist/
+*.deb
+*.pyc
