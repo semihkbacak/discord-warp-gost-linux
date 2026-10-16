@@ -1,0 +1,53 @@
+name: Windows Aero CI
+on:
+  push:
+    paths:
+      - 'windows/**'
+      - '.github/workflows/windows-aero.yml'
+  workflow_dispatch:
+jobs:
+  windows-aero:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: windows
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - name: Parse PowerShell 5.1 scripts
+        shell: powershell
+        run: |
+          $failed = $false
+          Get-ChildItem 'assets/*.ps1' | ForEach-Object {
+            $tokens = $null; $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($_.FullName,[ref]$tokens,[ref]$errors) | Out-Null
+            foreach ($e in $errors) { Write-Host "$($_.Name): $e"; $failed=$true }
+          }
+          if($failed) { exit 1 }
+      - name: Smoke test WinForms theme initialization
+        shell: powershell
+        run: |
+          $env:DWG_UI_SMOKE='1'
+          powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File .\assets\Setup-GUI.ps1
+          if($LASTEXITCODE -ne 0) { exit 1 }
+      - name: Portable tests
+        shell: pwsh
+        run: |
+          python tests/check_reference_skin.py
+          python tests/check_source.py
+          python tests/check_powershell_typographic_quotes.py
+      - name: Build Windows x64 GUI executable
+        shell: pwsh
+        run: |
+          go build -trimpath -ldflags='-H windowsgui -s -w' -o Discord-WARP-GOST-Setup-v1.0.0.exe .
+          $hash=(Get-FileHash -Algorithm SHA256 Discord-WARP-GOST-Setup-v1.0.0.exe).Hash.ToLowerInvariant()
+          "$hash  Discord-WARP-GOST-Setup-v1.0.0.exe" | Out-File -Encoding ascii SHA256SUMS.txt
+      - name: Upload tested Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: discord-warp-gost-windows-v1.0.0
+          path: |
+            windows/Discord-WARP-GOST-Setup-v1.0.0.exe
+            windows/SHA256SUMS.txt
