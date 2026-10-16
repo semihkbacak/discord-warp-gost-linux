@@ -1,5 +1,16 @@
 # Discord WARP + GOST (Linux)
 
+## Windows v1.0.0 — Vista Aero Türkçe
+
+**Windows 10/11 x64:** Türkçe Vista Aero arayüzlü Discord WARP + GOST kurulumu. Discord'a özel yerel WARP proxy kullanır; sistem geneli DNS/proxy ayarları proje tarafından değiştirilmez.
+
+- [Windows sürüm dosyaları — Releases](https://github.com/semihkbacak/discord-warp-gost-linux/releases)
+- [Windows kaynak kodu ve derleme talimatları](windows/) — kaynaklar ilk v1.0.0 paketi gönderildiğinde görüntülenecek
+- Bağımsız, **imzasız** topluluk yazılımı. UDP/WebRTC/sesli görüşme ve ekran paylaşımının tamamı garanti edilmez; Defender tespitlerini incelemeden güvenlik korumasını devre dışı bırakmayın.
+
+---
+
+
 **Discord'a özel yerel proxy başlatıcısı — sistem genelindeki DNS ayarlarına dokunmadan.**
 
 > 🇹🇷 Türkçe kurulum rehberi aşağıdadır. [English guide](docs/README.en.md).
