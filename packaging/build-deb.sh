@@ -7,7 +7,7 @@ out="$(realpath "$out")"
 stage="$(mktemp -d)"
 trap 'rm -rf "$stage"' EXIT
 pkg='discord-warp-gost-installer'
-version='0.2.0'
+version='0.2.1'
 mkdir -p "$stage/DEBIAN" "$stage/usr/share/discord-warp-gost-linux" \
     "$stage/usr/lib/discord-warp-gost" "$stage/usr/bin" \
     "$stage/usr/share/applications" "$stage/usr/share/doc/$pkg"

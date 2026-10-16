@@ -19,7 +19,7 @@ MUTED = '#AABBD0'
 ACCENT = '#667EEA'
 GOOD = '#56C6A1'
 BAD = '#F3A4A4'
-VERSION = '0.2.0'
+VERSION = '0.2.1'
 
 
 class Installer(tk.Tk):
@@ -32,12 +32,23 @@ class Installer(tk.Tk):
         self.events = queue.Queue()
         self.busy = False
         self.finished = False
+        self.current_operation = 'install'
         self.step = 0
         self.accepted = tk.BooleanVar(value=False)
         self.status_text = tk.StringVar(value='Kuruluma hazır')
         self._build()
-        self.after(90, self._poll)
+        self._poll_after_id = self.after(90, self._poll)
         self._page(0)
+
+    def destroy(self):
+        poll_id = getattr(self, '_poll_after_id', None)
+        if poll_id is not None:
+            self._poll_after_id = None
+            try:
+                self.after_cancel(poll_id)
+            except tk.TclError:
+                pass
+        super().destroy()
 
     def label(self, parent, text, size=11, weight='normal', color=FG, **kw):
         return tk.Label(parent, text=text, font=('DejaVu Sans', size, weight),
@@ -70,6 +81,9 @@ class Installer(tk.Tk):
         self.back_button.pack(side='left')
         self.next_button = self.button(bottom, 'İleri  ›', self._next)
         self.next_button.pack(side='right')
+        self.close_button = self.button(bottom, 'Kapat', self.destroy, muted=True)
+        # Installation has two sensible exits: launch Discord or close the wizard.
+        # The extra button is only visible on that result page.
         self.remove_button = self.button(bottom, 'Kaldır', lambda: self._run('uninstall'), muted=True)
         self.remove_button.pack(side='right', padx=(0, 10))
 
@@ -92,7 +106,11 @@ class Installer(tk.Tk):
             label.configure(fg=ACCENT if i == step else MUTED)
         self.status.configure(textvariable=self.status_text)
         self.back_button.configure(state='normal' if step in (1, 2) and not self.busy else 'disabled')
-        self.remove_button.configure(state='normal' if not self.busy else 'disabled')
+        self.remove_button.configure(state='normal' if not self.busy and step != 3 else 'disabled')
+        self.close_button.pack_forget()
+        self.remove_button.pack_forget()
+        if step != 3:
+            self.remove_button.pack(side='right', padx=(0, 10))
         if step == 0:
             self.label(self.content, 'Hoş geldiniz', 19, 'bold').pack(anchor='w', pady=(10, 16))
             text = ('Bu sihirbaz Discord için ayrı bir WARP + GOST bağlantısı hazırlar.\n\n'
@@ -128,7 +146,11 @@ class Installer(tk.Tk):
                 btn.pack(side='left', padx=(0, 8))
             self.next_button.configure(text='Yükle  ›', state='normal')
         elif step == 2:
-            self.label(self.content, 'Yükleme ilerlemesi', 19, 'bold').pack(anchor='w', pady=(8, 12))
+            heading = {'install': 'Yükleme ilerlemesi',
+                       'uninstall': 'Kaldırma ilerlemesi',
+                       'doctor': 'Bağlantı tanılama'}.get(self.current_operation, 'İşlem ilerlemesi')
+            self.step_labels[2].configure(text='3  ' + {'install':'Yükleme', 'uninstall':'Kaldırma', 'doctor':'Tanılama'}.get(self.current_operation, 'İşlem'))
+            self.label(self.content, heading, 19, 'bold').pack(anchor='w', pady=(8, 12))
             frame = tk.Frame(self.content, bg=PANEL)
             frame.pack(fill='both', expand=True)
             self.logbox = tk.Text(frame, bg=PANEL, fg=FG, insertbackground=FG,
@@ -138,18 +160,29 @@ class Installer(tk.Tk):
             self.logbox.configure(yscrollcommand=scrollbar.set)
             self.logbox.pack(side='left', fill='both', expand=True)
             scrollbar.pack(side='right', fill='y')
-            self.next_button.configure(text='Discord’u Aç', state='disabled')
+            self.next_button.configure(text='Devam Ediyor…', state='disabled')
         elif step == 3:
-            self.label(self.content, 'Kurulum tamamlandı!', 21, 'bold', GOOD).pack(anchor='w', pady=(18, 18))
-            self.label(self.content,
-                       'Discord (WARP) kısayolu artık uygulama menüsünde ve varsa\n'
-                       'masaüstünüzde yer alıyor. Bir terminal açmanız gerekmiyor.\n\n'
-                       'Chrome, Steam ve diğer uygulamalar normal bağlantılarını kullanır.\n'
-                       'Genel DNS ayarlarında değişiklik yapılmadı.',
-                       11, color=MUTED).pack(anchor='w')
-            self.next_button.configure(text='Discord’u Aç', state='normal')
-            self.button(self.content, 'Bağlantı tanılama', lambda: self._run('doctor'),
-                        muted=True).pack(anchor='w', pady=(24, 0))
+            self.step_labels[2].configure(text='3  ' + {'install':'Yükleme', 'uninstall':'Kaldırma', 'doctor':'Tanılama'}.get(self.current_operation, 'İşlem'))
+            if self.current_operation == 'uninstall':
+                self.label(self.content, 'Kaldırma tamamlandı!', 21, 'bold', GOOD).pack(anchor='w', pady=(18, 18))
+                self.label(self.content,
+                           'Discord (WARP) başlatıcısı, masaüstü kısayolu ve kullanıcı servisi kaldırıldı.\n\n'
+                           'Discord, Cloudflare WARP ve GOST uygulamaları korundu.\n'
+                           'Sistem genelindeki DNS ayarlarına dokunulmadı.',
+                           11, color=MUTED).pack(anchor='w')
+                self.next_button.configure(text='Kapat', state='normal')
+            else:
+                self.label(self.content, 'Kurulum tamamlandı!', 21, 'bold', GOOD).pack(anchor='w', pady=(18, 18))
+                self.label(self.content,
+                           'Discord (WARP) kısayolu artık uygulama menüsünde ve varsa\n'
+                           'masaüstünüzde yer alıyor. Bir terminal açmanız gerekmiyor.\n\n'
+                           'Chrome, Steam ve diğer uygulamalar normal bağlantılarını kullanır.\n'
+                           'Genel DNS ayarlarında değişiklik yapılmadı.',
+                           11, color=MUTED).pack(anchor='w')
+                self.next_button.configure(text='Discord’u Aç', state='normal')
+                self.close_button.pack(side='right', padx=(0, 10))
+                self.button(self.content, 'Bağlantı tanılama', lambda: self._run('doctor'),
+                            muted=True).pack(anchor='w', pady=(24, 0))
 
     def _next(self):
         if self.busy:
@@ -163,6 +196,9 @@ class Installer(tk.Tk):
             self._page(2)
             self._run('install')
         elif self.step == 3:
+            if self.current_operation == 'uninstall':
+                self.destroy()
+                return
             try:
                 import subprocess
                 subprocess.Popen([str(Path.home()/'.local/bin/discord-warp-gost-linux')],
@@ -185,13 +221,14 @@ class Installer(tk.Tk):
     def _run(self, operation):
         if self.busy:
             return
-        if operation == 'uninstall' and not self.finished:
+        if operation == 'uninstall':
             # Make removing a pre-existing setup intentional.
             from tkinter import messagebox
             if not messagebox.askyesno('Kaldırma onayı',
                    'Discord (WARP) başlatıcısını kaldırmak istiyor musunuz?\n'
                    'Orijinal Discord, WARP ve GOST uygulamaları korunacak.'):
                 return
+        self.current_operation = operation
         if operation != 'install':
             self._page(2)
         self.busy = True
@@ -232,22 +269,23 @@ class Installer(tk.Tk):
                         self._append_log('HATA: ' + value)
                         self.status_text.set('İşlem tamamlanamadı: ayrıntılar yukarıda.')
                         self.next_button.configure(text='Tekrar Dene', state='normal',
-                                                   command=lambda: self._run('install'))
+                                                   command=lambda op=self.current_operation: self._run(op))
                     elif value == 'install':
                         self.finished = True
                         self.status_text.set('Kurulum tamamlandı.')
                         self._page(3)
                     elif value == 'uninstall':
-                        self.status_text.set('Kurulum kaldırıldı. WARP ve Discord korunuyor.')
-                        self.next_button.configure(text='Başa Dön', state='normal',
-                                                   command=lambda: self._page(0))
+                        self.finished = False
+                        self.status_text.set('Kaldırma tamamlandı. WARP ve Discord korunuyor.')
+                        self._page(3)
                     else:
                         self.status_text.set('Tanılama tamamlandı.')
                         self.next_button.configure(text='Başa Dön', state='normal',
                                                    command=lambda: self._page(0))
         except queue.Empty:
             pass
-        self.after(90, self._poll)
+        if self.winfo_exists():
+            self._poll_after_id = self.after(90, self._poll)
 
 
 if __name__ == '__main__':

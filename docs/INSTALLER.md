@@ -20,3 +20,10 @@
 
 Build: `./packaging/build-deb.sh dist/`
 Check: `dpkg-deb --info dist/*.deb && bash tests/test.sh`
+
+## v0.2.1 wizard transitions
+
+- Successful uninstall now ends on the same fourth **Completed** step as installation, with a contextual **Close** button.
+- Installation completion offers **Launch Discord** or **Close**.
+- Failed uninstall retry repeats uninstall, not installation.
+- Run `xvfb-run -a python3 tests/test_gui.py` for headless transition tests.

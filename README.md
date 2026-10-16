@@ -1,5 +1,10 @@
 # Discord WARP + GOST
 
+## Linux v0.2.1 Beta
+
+Linux kurulum sihirbazındaki kaldırma tamamlandı sayfası ve yeniden dene akışı düzeltildi. Windows sürümü etkilenmez.
+
+
 ## Windows v1.0.0
 
 **Windows 10/11 x64:** Türkçe arayüzlü Discord WARP + GOST kurulumu. Discord'a özel yerel WARP proxy kullanır; sistem geneli DNS/proxy ayarları proje tarafından değiştirilmez.
@@ -159,7 +164,7 @@ Depo oluşturma ve GitHub CLI ile gönderme adımları: [docs/PUBLISHING.md](doc
 ## Tek tıkla başlayan grafik kurulum (Ubuntu `.deb`)
 
 Windows kurulum sihirbazına benzer bir arayüz kullanmak için **Releases** bölümündeki
-`discord-warp-gost-installer_0.2.0_all.deb` dosyasını indirin ve **çift tıklayın**.
+`discord-warp-gost-installer_0.2.1_all.deb` dosyasını indirin ve **çift tıklayın**.
 Ubuntu App Center veya GDebi üzerinden **Yükle** seçeneğini kullanın (gerekirse
 sistem yöneticisi şifresi istenir). Sonra uygulama menüsündeki **Discord WARP
 Kurulum Sihirbazı** uygulamasını açın, Cloudflare koşullarını inceleyip **Yükle**
