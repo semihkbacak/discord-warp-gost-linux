@@ -1,8 +1,8 @@
 # Discord WARP + GOST
 
-## Linux v0.2.1 Beta
+## Linux v0.2.1 — Stable
 
-Linux kurulum sihirbazındaki kaldırma tamamlandı sayfası ve yeniden dene akışı düzeltildi. Windows sürümü etkilenmez.
+Linux için grafik kurulum sihirbazı. Kaldırma işlemi sonrası tamamlandı ekranı, kapanış düğmesi ve güvenli yeniden-dene akışı iyileştirildi. Terminal üzerinden kurulum betikleri de depoda yer alır. Windows v1.0.0 dosyaları değiştirilmedi.
 
 
 ## Windows v1.0.0
